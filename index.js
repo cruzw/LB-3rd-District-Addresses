@@ -6,7 +6,7 @@ const readStream = fs.createReadStream('./data/city_of_long_beach.csv');
 const writeStream = fs.createWriteStream('./data/output.json');
 
 // however many rows processed you'd like an update
-let logEveryX = 1000;
+const logEveryX = 1000;
 
 // variable to track rows processed
 let rowCount = 0;
@@ -15,11 +15,12 @@ let rowCount = 0;
 let separator = '[';
 
 // check if address is within district coordinates
-const isIn3rdDistrict = (latitude, longitude) => geolib
-  .isPointInPolygon(
+const isIn3rdDistrict = (latitude, longitude) => {
+  return geolib.isPointInPolygon(
     { latitude, longitude },
     third_district_coordinates
   );
+}
 
 // remove empty string fields in object
 const cleanAddr = (addrObj) => {
@@ -32,19 +33,19 @@ const cleanAddr = (addrObj) => {
   )
   return addrObj;
 }
-  
 
 // filter out third district rows
-const handleCsvData = (row, i) => {
-  let { LAT, LON } = row;
-  let inThird = isIn3rdDistrict(LAT, LON);
+const handleCsvData = (row) => {
+  const { LAT, LON } = row;
+  const inThird = isIn3rdDistrict(LAT, LON);
 
   if (!inThird) return;
   
-  let cleanRow = cleanAddr(row)
+  // remove empty fields for filesize
+  row = cleanAddr(row);
 
   writeStream.write(
-    separator + JSON.stringify(cleanRow, null, 3)
+    separator + JSON.stringify(row, null, 3)
   );
   
   // after first row, comma-separate JSON
@@ -52,7 +53,7 @@ const handleCsvData = (row, i) => {
   
   // log every X rows
   if (rowCount % logEveryX === 0) {
-    console.log(`parsing rows ${rowCount} - ${rowCount+logEveryX}...`)
+    console.log(`parsing rows ${rowCount} - ${rowCount+logEveryX}...`);
   }
   rowCount++;
 }
@@ -62,5 +63,5 @@ readStream
   .on('data', handleCsvData)
   .on('end', () => {
     // close JSON stream with array bracket
-    writeStream.write("]")
-  })
+    writeStream.write("]");
+  });
